@@ -1,0 +1,17 @@
+{
+  "name": "cotizador-widget",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Widget embebible del Cotizador Virtual (script + contenedor iframe)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
