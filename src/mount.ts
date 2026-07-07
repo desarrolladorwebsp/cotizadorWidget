@@ -266,6 +266,8 @@ export function mountWidget(
   };
 
   const applyHeight = (height: number) => {
+    if (!Number.isFinite(height) || height <= 0) return;
+
     const floor = config.minHeight ?? 1;
     const padding = usesPageScrollMode(config.mobileScroll)
       ? RESIZE_HEIGHT_PADDING_NO_MOBILE_SCROLL
@@ -372,6 +374,7 @@ export function mountWidget(
     }
 
     if (data.type === EMBED_RESIZE_MESSAGE && typeof data.height === "number") {
+      if (!Number.isFinite(data.height) || data.height <= 0) return;
       applyHeight(data.height);
       stopResizePolling();
       if (iframe.dataset.ready !== "true") {
