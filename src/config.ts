@@ -103,7 +103,7 @@ function parseMobileScroll(
     readDatasetValue(element, script, "mobileScroll") ??
     readDatasetValue(element, script, "mobile-scroll");
 
-  if (!raw) return true;
+  if (!raw) return "auto";
   if (raw === "auto") return "auto";
   if (raw === "false" || raw === "0") return false;
   return raw === "true" || raw === "1";

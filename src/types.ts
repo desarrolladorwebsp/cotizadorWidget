@@ -5,6 +5,8 @@ export const EMBED_READY_MESSAGE = "cotizador-premium:ready" as const;
 export const EMBED_EXIT_NAVIGATE_MESSAGE =
   "cotizador-premium:exit-navigate" as const;
 export const EMBED_WHEEL_MESSAGE = "cotizador-premium:wheel" as const;
+export const EMBED_REQUEST_RESIZE_MESSAGE =
+  "cotizador-premium:request-resize" as const;
 
 export interface WidgetConfig {
   baseUrl: string;
@@ -19,8 +21,9 @@ export interface WidgetConfig {
   title: string;
   fullWidth: boolean;
   /**
-   * true (default): scroll interno 72vh en móvil (legacy).
-   * false | "auto": iframe crece; scroll de página (auto permite scroll en iframe solo si falta altura).
+   * "auto" (default): iframe crece con el contenido; scroll de la página anfitriona.
+   * true: scroll interno 72vh en móvil (legacy).
+   * false: iframe crece siempre; scroll de página.
    */
   mobileScroll?: boolean | "auto";
   query: Record<string, string>;

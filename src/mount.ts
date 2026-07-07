@@ -2,6 +2,7 @@ import {
   EMBED_EXIT_NAVIGATE_MESSAGE,
   EMBED_MESSAGE_SOURCE,
   EMBED_READY_MESSAGE,
+  EMBED_REQUEST_RESIZE_MESSAGE,
   EMBED_RESIZE_MESSAGE,
   EMBED_WHEEL_MESSAGE,
   type WidgetConfig,
@@ -20,7 +21,10 @@ const MOBILE_MAX_HEIGHT_VH = 72;
 
 /** Padding extra al aplicar altura recibida por postMessage (evita recorte inferior). */
 const RESIZE_HEIGHT_PADDING = 12;
-const RESIZE_HEIGHT_PADDING_NO_MOBILE_SCROLL = 64;
+const RESIZE_HEIGHT_PADDING_NO_MOBILE_SCROLL = 96;
+
+const RESIZE_POLL_INTERVAL_MS = 800;
+const RESIZE_POLL_MAX_ATTEMPTS = 12;
 
 function usesPageScrollMode(mobileScroll: WidgetConfig["mobileScroll"]): boolean {
   return mobileScroll === false || mobileScroll === "auto";
@@ -55,6 +59,7 @@ function injectStyles() {
       max-width: none;
       overflow: visible;
       background: transparent;
+      touch-action: pan-y;
     }
     .${LOADER_CLASS}[data-full-width="true"] {
       width: 100vw;
@@ -270,10 +275,44 @@ export function mountWidget(
     iframe.style.height = `${nextHeight}px`;
     iframe.style.minHeight = `${nextHeight}px`;
     iframe.style.maxHeight = "none";
+    iframe.setAttribute("height", String(nextHeight));
     element.style.height = `${nextHeight}px`;
     element.style.minHeight = `${nextHeight}px`;
     element.style.maxHeight = "none";
     syncMobileScrollMode();
+  };
+
+  const requestEmbedResize = () => {
+    const target = iframe.contentWindow;
+    if (!target) return;
+    target.postMessage(
+      {
+        type: EMBED_REQUEST_RESIZE_MESSAGE,
+        source: EMBED_MESSAGE_SOURCE,
+      },
+      "*",
+    );
+  };
+
+  let resizePollTimer: number | null = null;
+  let resizePollAttempts = 0;
+
+  const startResizePolling = () => {
+    if (resizePollTimer !== null) return;
+    resizePollTimer = window.setInterval(() => {
+      resizePollAttempts += 1;
+      requestEmbedResize();
+      if (resizePollAttempts >= RESIZE_POLL_MAX_ATTEMPTS && resizePollTimer !== null) {
+        window.clearInterval(resizePollTimer);
+        resizePollTimer = null;
+      }
+    }, RESIZE_POLL_INTERVAL_MS);
+  };
+
+  const stopResizePolling = () => {
+    if (resizePollTimer === null) return;
+    window.clearInterval(resizePollTimer);
+    resizePollTimer = null;
   };
 
   const markReady = () => {
@@ -334,6 +373,7 @@ export function mountWidget(
 
     if (data.type === EMBED_RESIZE_MESSAGE && typeof data.height === "number") {
       applyHeight(data.height);
+      stopResizePolling();
       if (iframe.dataset.ready !== "true") {
         markReady();
       }
@@ -342,6 +382,7 @@ export function mountWidget(
 
   window.addEventListener("message", onMessage);
   syncMobileScrollMode();
+  startResizePolling();
 
   if (!usesPageScrollMode(config.mobileScroll) && typeof window.matchMedia === "function") {
     mobileMediaQuery = window.matchMedia("(max-width: 768px)");
@@ -349,6 +390,8 @@ export function mountWidget(
   }
 
   iframe.addEventListener("load", () => {
+    startResizePolling();
+    requestEmbedResize();
     if (iframe.dataset.ready !== "true") {
       markReady();
     }
@@ -356,6 +399,7 @@ export function mountWidget(
 
   return {
     destroy: () => {
+      stopResizePolling();
       window.removeEventListener("message", onMessage);
       mobileMediaQuery?.removeEventListener("change", onMobileViewportChange);
       element.replaceChildren();
