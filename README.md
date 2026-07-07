@@ -15,6 +15,20 @@ Sitio del cliente                Widget (este repo)              Cotizador Virtu
 
 El loader (`cotizador-widget.js`) solo monta el iframe y ajusta la altura; casi nunca necesita cambios.
 
+## Qué muestra el widget (y qué no)
+
+El iframe carga la **UI funcional del cotizador** — la misma que ves en cotizaloantes.cl al comparar planes:
+
+| Incluido en el iframe | Lo pone el sitio anfitrión (fuera del widget) |
+|-----------------------|-----------------------------------------------|
+| Barra de criterios (región, ingreso, edad, sexo) | Títulos de sección («Cotizador en línea», etc.) |
+| Filtros laterales (precio, isapres, zonas…) | Header / navegación del sitio |
+| Tarjetas de planes + botón Solicitar | Footer, WhatsApp, marketing extra |
+| Ordenar por / moneda CLP·UF | |
+| Modal de solicitud al pulsar «Solicitar» | |
+
+**No dupliques** componentes de planes ni filtros en React en cada sitio: reemplázalos por este script y mantén solo el copy/branding alrededor.
+
 ## Integración rápida
 
 Pega esto en cualquier página HTML:
@@ -28,10 +42,12 @@ Pega esto en cualquier página HTML:
 ></div>
 
 <script
-  src="https://TU-DOMINIO-WIDGET/cotizador-widget.js"
+  src="https://cotizador-widget.vercel.app/cotizador-widget.js"
   async
 ></script>
 ```
+
+Demo en vivo: https://cotizador-widget.vercel.app/
 
 ### Atributos soportados (`data-*`)
 
@@ -40,7 +56,7 @@ Pega esto en cualquier página HTML:
 | `data-cotizador-widget` | Marca el contenedor (obligatorio) | — |
 | `data-partner` | Slug de entidad aliada | `cotizaloantes` |
 | `data-base-url` | URL del cotizador virtual | `https://cotizador.cotizaloantes.cl` |
-| `data-min-height` | Altura mínima en px | `720` |
+| `data-min-height` | Altura mínima opcional en px (por defecto el iframe crece con el contenido) | — |
 | `data-title` | Título accesible del iframe | `Cotizador de planes de salud` |
 | `data-auto-search` | `true` / `1` → agrega `auto=1` | — |
 | `data-region`, `data-edad`, `data-ingreso`, … | Deep-link params | — |
@@ -117,8 +133,9 @@ EMBED_FRAME_ANCESTORS=https://cotizaloantes.cl https://www.cotizaloantes.cl http
 
 | Ruta | Uso |
 |------|-----|
-| `/embed` | Entidad por defecto (cookie / env) |
-| `/embed/cotizaloantes` | Entidad aliada con branding |
+| `/embed` | Entidad por defecto (requiere deploy reciente) |
+| `/embed/cotizaloantes` | Entidad aliada en ruta dedicada embed |
+| `/cotizaloantes?embed=1` | **Usado por el widget hoy** — compatible con prod actual |
 | `/?embed=1` | Modo embed en la vista pública estándar |
 
 El modo embed oculta el hero, el botón «Volver» y el FAB de WhatsApp, y notifica la altura al padre vía `postMessage`.

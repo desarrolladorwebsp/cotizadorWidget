@@ -1,8 +1,10 @@
 import type { WidgetConfig } from "./types";
 
-const DEFAULT_BASE_URL = "https://cotizador.cotizaloantes.cl";
-const DEFAULT_PARTNER = "cotizaloantes";
-const DEFAULT_MIN_HEIGHT = 720;
+const DEFAULT_BASE_URL = "https://cotizadorpremium.cl";
+const DEFAULT_AGENT_KEY = "cotizaloantes";
+
+/** Altura inicial del iframe mientras carga (solo placeholder; luego manda el embed). */
+export const EMBED_LOADING_HEIGHT = 120;
 
 /** Params de deep-link soportados vía data-* en el contenedor. */
 const QUERY_PARAM_KEYS = [
@@ -53,15 +55,78 @@ function normalizeBaseUrl(raw: string | undefined): string {
   }
 }
 
-function parseMinHeight(raw: string | undefined): number {
-  const parsed = Number.parseInt(raw ?? "", 10);
-  if (!Number.isFinite(parsed) || parsed < 320) {
-    return DEFAULT_MIN_HEIGHT;
+function parseMinHeight(raw: string | undefined): number | undefined {
+  if (!raw?.trim()) return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return undefined;
   }
   return parsed;
 }
 
-function buildQueryParams(element: HTMLElement, script: HTMLScriptElement | null): Record<string, string> {
+function parseFullWidth(
+  element: HTMLElement,
+  script: HTMLScriptElement | null,
+): boolean {
+  const raw =
+    readDatasetValue(element, script, "fullWidth") ??
+    readDatasetValue(element, script, "full-width");
+  if (!raw) return true;
+  return raw === "true" || raw === "1";
+}
+
+function readAgentKey(
+  element: HTMLElement,
+  script: HTMLScriptElement | null,
+  overrides: Partial<WidgetConfig>,
+): string {
+  return (
+    overrides.agentKey ??
+    readDatasetValue(element, script, "agentKey") ??
+    readDatasetValue(element, script, "agent-key") ??
+    overrides.partner ??
+    readDatasetValue(element, script, "partner") ??
+    DEFAULT_AGENT_KEY
+  );
+}
+
+function parseMobileScroll(
+  element: HTMLElement,
+  script: HTMLScriptElement | null,
+  overrides: Partial<WidgetConfig>,
+): boolean | "auto" {
+  if (overrides.mobileScroll !== undefined) {
+    return overrides.mobileScroll;
+  }
+
+  const raw =
+    readDatasetValue(element, script, "mobileScroll") ??
+    readDatasetValue(element, script, "mobile-scroll");
+
+  if (!raw) return true;
+  if (raw === "auto") return "auto";
+  if (raw === "false" || raw === "0") return false;
+  return raw === "true" || raw === "1";
+}
+
+function readRoutingMode(
+  element: HTMLElement,
+  script: HTMLScriptElement | null,
+  overrides: Partial<WidgetConfig>,
+): "premium" | "legacy" | undefined {
+  const raw =
+    overrides.routing ??
+    readDatasetValue(element, script, "routing") ??
+    readDatasetValue(element, script, "cotizadorRouting");
+
+  if (raw === "premium" || raw === "legacy") return raw;
+  return undefined;
+}
+
+function buildQueryParams(
+  element: HTMLElement,
+  script: HTMLScriptElement | null,
+): Record<string, string> {
   const query: Record<string, string> = {};
 
   for (const key of QUERY_PARAM_KEYS) {
@@ -90,10 +155,9 @@ export function resolveWidgetConfig(
       readDatasetValue(element, script, "cotizadorUrl"),
   );
 
-  const partner =
-    overrides.partner ??
-    readDatasetValue(element, script, "partner") ??
-    DEFAULT_PARTNER;
+  const agentKey = readAgentKey(element, script, overrides);
+  const partner = overrides.partner ?? agentKey;
+  const routing = readRoutingMode(element, script, overrides);
 
   const minHeight =
     overrides.minHeight ??
@@ -104,20 +168,48 @@ export function resolveWidgetConfig(
     readDatasetValue(element, script, "title") ??
     "Cotizador de planes de salud";
 
+  const fullWidth =
+    overrides.fullWidth ?? parseFullWidth(element, script);
+
+  const mobileScroll = parseMobileScroll(element, script, overrides);
+
   const query = {
     ...buildQueryParams(element, script),
     ...overrides.query,
   };
 
-  return { baseUrl, partner, minHeight, title, query };
+  return {
+    baseUrl,
+    agentKey,
+    partner,
+    routing,
+    minHeight,
+    title,
+    fullWidth,
+    mobileScroll,
+    query,
+  };
 }
 
 export function buildEmbedUrl(config: WidgetConfig): string {
-  const path = config.partner ? `/embed/${encodeURIComponent(config.partner)}` : "/embed";
-  const url = new URL(path, `${config.baseUrl}/`);
+  const premium = config.routing !== "legacy";
+  const url = premium
+    ? new URL("/cotizador", `${config.baseUrl}/`)
+    : new URL(
+        config.partner ? `/${encodeURIComponent(config.partner)}` : "/",
+        `${config.baseUrl}/`,
+      );
+
+  if (premium) {
+    url.searchParams.set("agent", config.agentKey);
+  }
+
+  url.searchParams.set("embed", "1");
+
   for (const [key, value] of Object.entries(config.query)) {
     url.searchParams.set(key, value);
   }
+
   return url.toString();
 }
 

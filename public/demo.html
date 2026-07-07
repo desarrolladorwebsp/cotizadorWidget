@@ -46,37 +46,35 @@
   </head>
   <body>
     <div class="page">
-      <h1>Widget embebible — demo local</h1>
+      <h1>Widget embebible — demo en producción</h1>
       <p>
         Esta página simula un sitio de terceros. El cotizador se carga vía iframe desde
-        <code>cotizador-virtual</code> (debe estar corriendo en el puerto 3001).
+        <code>cotizador.cotizaloantes.cl</code>.
       </p>
 
       <pre>&lt;div
   data-cotizador-widget
   data-partner="cotizaloantes"
-  data-base-url="http://localhost:3001"
   data-auto-search="true"
   data-region="rm"
   data-edad="34"
   data-ingreso="1500000"
 &gt;&lt;/div&gt;
-&lt;script src="/cotizador-widget.js" async&gt;&lt;/script&gt;</pre>
+&lt;script src="https://cotizador-widget.vercel.app/cotizador-widget.js" async&gt;&lt;/script&gt;</pre>
 
       <div class="card">
         <div
           data-cotizador-widget
           data-partner="cotizaloantes"
-          data-base-url="http://localhost:3001"
+          data-base-url="https://cotizador.cotizaloantes.cl"
           data-auto-search="true"
           data-region="rm"
           data-edad="34"
           data-ingreso="1500000"
-          data-min-height="760"
         ></div>
       </div>
     </div>
 
-    <script type="module" src="/src/loader.ts"></script>
+    <script src="/cotizador-widget.js" async></script>
   </body>
 </html>
