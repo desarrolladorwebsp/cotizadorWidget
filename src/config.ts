@@ -1,7 +1,7 @@
 import type { WidgetConfig } from "./types";
 
-const DEFAULT_BASE_URL = "https://cotizadorpremium.cl";
-const DEFAULT_AGENT_KEY = "cotizaloantes";
+const DEFAULT_BASE_URL = "https://isaprespremium.cl";
+const DEFAULT_AGENT_KEY = "isaprespremium";
 
 /** Altura inicial del iframe mientras carga (solo placeholder; luego manda el embed). */
 export const EMBED_LOADING_HEIGHT = 120;
